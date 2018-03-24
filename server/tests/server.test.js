@@ -11,7 +11,9 @@ const todos = [{
     text: 'First test todo'
 }, {
     _id: new ObjectID(),
-    text: 'Second test todo'
+    text: 'Second test todo',
+    completed: true,
+    completedAt: 333
 }];
 
 beforeEach((done) => {
@@ -86,7 +88,6 @@ describe('GET /todos/:id', () => {
     });
 
     it('should return a 404 if todo not found', (done) => {
-        // make sure you get a 404 back
         request(app)
             .get(`/todos/${new ObjectID().toHexString()}`)
             .expect(404)
@@ -94,7 +95,6 @@ describe('GET /todos/:id', () => {
     });
 
     it('should return a 404 for non-object ids', (done) => {
-        // todos/123
         request(app)
             .get('/todos/123')
             .expect(404)
@@ -139,4 +139,42 @@ describe('DELETE /todos/:id', () => {
             .end(done);
     });
 
+});
+
+describe('PATCH /todos/:id', () => {
+    it('should update the todo', (done) => {
+        var hexId = todos[0]._id.toHexString();
+        todos[0].text = 'Updated text';
+        request(app)
+            .patch(`/todos/${hexId}`)
+            .send({
+                text: todos[0].text,
+                completed: true
+            })
+            .expect(200)
+            .expect((res) => {
+                expect(res.body.todo.text).toBe(todos[0].text);
+                expect(res.body.todo.completed).toBe(true);
+                expect(res.body.todo.completedAt).toBeA('number');
+            })
+            .end(done);
+    });
+
+    it('should clear completedAt when todo is not completed', (done) => {
+        var hexId = todos[1]._id.toHexString();
+        todos[1].text = 'Updated text';
+        todos[1].completed = false;
+        request(app)
+            .patch(`/todos/${hexId}`)
+            .send({
+                text: todos[1].text,
+                completed: todos[1].completed
+            })
+            .expect(200)
+            .expect((res) => {
+                expect(res.body.todo.text).toBe(todos[1].text);
+                expect(res.body.todo.completedAt).toNotExist();
+            })
+            .end(done);
+    });
 });
